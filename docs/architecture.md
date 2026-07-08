@@ -39,5 +39,6 @@ We maintain a log of significant architectural decisions to preserve institution
 - [ADR-0003: Why Evidence Passports?](decisions/ADR-0003-why-evidence-passports.md)
 - [ADR-0004: Repository Separation Strategy](decisions/ADR-0004-repository-separation.md)
 - [ADR-0005: Why a Scientific Information Architecture?](decisions/ADR-0005-why-sia.md)
+- [ADR-0006: API Versioning Strategy](decisions/ADR-0006-api-versioning.md)
 
 *Note: Any future significant architectural changes should be recorded as additional ADRs rather than silently changing the implementation.*
