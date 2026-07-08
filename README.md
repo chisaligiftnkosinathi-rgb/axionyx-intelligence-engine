@@ -25,6 +25,7 @@ AXIONYX is designed for zero-config deployment on Railway using Nixpacks.
 See [Deployment](docs/deployment.md) for details on the `railway.toml` configuration.
 
 ## Documentation Reference
+- [Architecture & Decisions](docs/architecture.md)
 - [Evidence Passports](docs/evidence-passports.md)
 - [API Reference](docs/api.md)
 - [Governance](docs/governance.md)

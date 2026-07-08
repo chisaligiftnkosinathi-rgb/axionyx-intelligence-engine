@@ -31,3 +31,13 @@ The production-ready FastAPI service. It focuses purely on backend execution, de
 
 ### `axionyx-contracts` (Future)
 A shared schema registry. This will store the reusable TypeScript and Python contracts, models, and Evidence Specifications, allowing both `axis_clean` applications and the `Intelligence Engine` to safely share data structures.
+
+## Architectural Decision Records (ADRs)
+We maintain a log of significant architectural decisions to preserve institutional memory and design provenance:
+- [ADR-0001: Why FastAPI?](decisions/ADR-0001-why-fastapi.md)
+- [ADR-0002: Why Railway?](decisions/ADR-0002-why-railway.md)
+- [ADR-0003: Why Evidence Passports?](decisions/ADR-0003-why-evidence-passports.md)
+- [ADR-0004: Repository Separation Strategy](decisions/ADR-0004-repository-separation.md)
+- [ADR-0005: Why a Scientific Information Architecture?](decisions/ADR-0005-why-sia.md)
+
+*Note: Any future significant architectural changes should be recorded as additional ADRs rather than silently changing the implementation.*
