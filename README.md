@@ -13,6 +13,12 @@ AXIONYX is structured as a scalable FastAPI backend that handles epistemic truth
 - See [Scientific Information Architecture](docs/scientific-information-architecture.md) for philosophical foundations.
 - See [The Codex](docs/codex.md) for governance and stewardship models.
 
+### Current Implementation details
+**`InMemoryEvidenceRepository`**
+- **Purpose**: Demonstration and API validation.
+- **Persistence lifetime**: Application process.
+- **Replacement target**: PostgreSQL implementation in Phase XIV.
+
 ## Quick Start
 To run the Intelligence Engine locally:
 ```bash
