@@ -1,98 +1,64 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-import json
-import os
-from pathlib import Path
+from typing import Dict, Any
 
-app = FastAPI(title="AXIS Evidence Governance API")
+from .models import APIResponse
+from .repositories import InMemoryEvidenceRepository
+from .services import EvidencePassportService
 
-# Setup CORS to allow the Next.js frontend to interact with the API
+app = FastAPI(title="AXIONYX Intelligence Engine", version="1.0")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # For demonstration, allow all. Hardened in prod.
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# Initialize singletons (to be replaced by dependency injection in prod)
+repo = InMemoryEvidenceRepository()
+passport_service = EvidencePassportService(repository=repo)
+
+def build_response(status: str, data: Dict[str, Any]) -> dict:
+    return APIResponse(status=status, data=data).model_dump()
+
 
 @app.get("/health")
 def health_check():
-    return {"status": "operational", "system": "AXIS_Governance_Engine"}
+    return {"status": "operational", "system": "AXIONYX Intelligence Engine"}
 
-@app.get("/registry")
-def get_registry():
-    registry_path = BASE_DIR / "registry" / "evidence_registry.json"
-    if not registry_path.exists():
-        raise HTTPException(status_code=404, detail="Registry index not found")
-    with open(registry_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+# ---------------------------------------------------------
+# Evidence Passport API (v1)
+# ---------------------------------------------------------
 
-@app.get("/passport/{axid:path}")
-def get_passport(axid: str):
-    # Search the registry for the passport file location based on AXID
-    registry_path = BASE_DIR / "registry" / "evidence_registry.json"
-    if not registry_path.exists():
-        raise HTTPException(status_code=404, detail="Registry index not found")
-        
-    with open(registry_path, "r", encoding="utf-8") as f:
-        registry = json.load(f)
-        
-    for p in registry.get("passports", []):
-        if p["axid"] == axid or p["axid"] == f"axid://{axid}":
-            # For this prototype, we'll return the zip file itself if it exists,
-            # or we might need to return the passport JSON metadata.
-            # Usually an Evidence Passport is an .axispack (ZIP)
-            # Let's see if we have an .axispack file locally that matches.
-            # We hardcode the path to the prototype axispack for the coal sample.
-            axispack_path = BASE_DIR / "COAL_SAMPLE_2026_00001.axispack" 
-            if not axispack_path.exists():
-                 # fallback check in demonstrator package
-                 axispack_path = BASE_DIR / "AXIS_Demonstrator_v1" / "Demonstration" / "COAL_SAMPLE_2026_00001.axispack"
-                 
-            if axispack_path.exists():
-                return FileResponse(
-                    path=axispack_path,
-                    media_type="application/zip",
-                    filename="COAL_SAMPLE_2026_00001.axispack"
-                )
-            else:
-                 return {"status": "not_found", "message": "The .axispack container is currently offline."}
-                 
-    raise HTTPException(status_code=404, detail="Evidence Passport not found in registry")
+@app.post("/api/v1/evidence/passports")
+def create_passport(observation: Dict[str, Any]):
+    passport = passport_service.create_passport(observation)
+    return build_response("sealed", {
+        "passport_id": passport.id,
+        "hash": passport.sha256_hash,
+        "created_at": passport.created_at,
+        "status": "sealed"
+    })
 
-@app.get("/classes")
-def get_classes():
-    return {
-        "classes": [
-            {"class": "EP-001", "name": "Research Proposal", "purpose": "A governed declaration of research intent, methodology, and ethics."},
-            {"class": "EP-002", "name": "Laboratory Result", "purpose": "An analytical artifact mapping experimental data and sample metrics."},
-            {"class": "EP-003", "name": "Inspection Evidence", "purpose": "Field or facility inspection technical records."},
-            {"class": "EP-004", "name": "Calibration Record", "purpose": "Traceability and calibration data for analytical instruments."},
-            {"class": "EP-005", "name": "Compliance Evidence", "purpose": "System-level audit trails and conformity assessments."}
-        ]
-    }
+@app.get("/api/v1/evidence/passports/{passport_id:path}")
+def get_passport(passport_id: str):
+    passport = passport_service.get_passport(passport_id)
+    if not passport:
+        raise HTTPException(status_code=404, detail="Passport not found")
+    return build_response("success", passport.model_dump())
 
-@app.get("/constitution")
-def get_constitution():
-    constitution_path = BASE_DIR / "constitutions" / "axionyx_evidence_standard_v1.json"
-    if not constitution_path.exists():
-        raise HTTPException(status_code=404, detail="Constitution not found")
-    with open(constitution_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+@app.post("/api/v1/evidence/passports/{passport_id:path}/verify")
+def verify_passport(passport_id: str):
+    result = passport_service.verify_passport(passport_id)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return build_response("success", result)
 
-@app.get("/architecture")
-def get_architecture():
-    # Return the structure mapping for the Next.js visualizer
-    return {
-        "infrastructure": {
-            "name": "AXIS Computational Governance",
-            "layers": [
-                {"name": "Governance Layer", "components": ["Constitution Engine", "Canonical Governance Graph"]},
-                {"name": "Trust Layer", "components": ["Evidence Passport", "Cryptographic Hash"]},
-                {"name": "Identity Layer", "components": ["AXID Resolver", "Evidence Registry"]}
-            ]
-        }
-    }
+@app.get("/api/v1/evidence/passports/{passport_id:path}/replay")
+def replay_passport(passport_id: str):
+    result = passport_service.replay_passport(passport_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Passport not found")
+    return build_response("success", result)
